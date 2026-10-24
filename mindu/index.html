@@ -276,7 +276,7 @@ const GK=w=>mode==='es'?w.en:w.es;   /* el significado que se muestra como tradu
 
 /* ---------- guardado (localStorage, namespace mindu) ---------- */
 const SKEY='minduProtoV1';
-const SAVEDEF={done:false,doneEs:false,doneM2:false,doneM2Es:false,coins:0,xp:0,review:[],reviewEs:[],reviewM2:[],reviewM2Es:[],plays:0,ach:{},playDays:[]};
+const SAVEDEF={done:false,doneEs:false,doneM2:false,doneM2Es:false,coins:0,xp:0,review:[],reviewEs:[],reviewM2:[],reviewM2Es:[],plays:0,ach:{},playDays:[],lastComet:''};
 function loadSave(){ try{ const s=JSON.parse(localStorage.getItem(SKEY)); if(s&&typeof s==='object') return Object.assign({},SAVEDEF,s); }catch(_){}
   return Object.assign({},SAVEDEF); }
 let SAVE=loadSave();
@@ -333,13 +333,18 @@ function renderAch(){
     rows.appendChild(d); }
 }
 
-/* ================= MAPA DE LA GALAXIA (Fase 3) =================
-   Datos puros: cada galaxia es una etapa grande (50–100 niveles en la ruta
-   larga). Las estaciones de la Galaxia 1 son los cuerpos del sistema solar en
-   orden de viaje; una estación con «mission» apunta a MISSIONS y hereda su
-   estado del guardado. Añadir misiones o galaxias = añadir datos aquí. */
+/* ============ GALAXIAS / ESCALERA (Fase 3 + ampliación David 24 oct 00:17) ============
+   Cada galaxia es una etapa grande (50–100 niveles en la ruta larga) con su
+   TIPO DE ENSEÑANZA: Galaxia 1 = PALABRAS, Galaxia 2 = FRASES (caen en partes
+   y se arman en orden), Galaxia 3 = CONVERSACIÓN. El gameplay de frases y
+   conversación se construye con el contenido de cada galaxia: aquí solo la
+   arquitectura y las etiquetas. Las estaciones de la Galaxia 1 son los cuerpos
+   del sistema solar en orden de viaje; una estación con «mission» apunta a
+   MISSIONS y hereda su estado del guardado. Añadir misiones o galaxias =
+   añadir datos aquí, sin rediseñar el mapa. */
 const GALAXIES=[
   { id:1, name:{en:'GALAXIA 1 · SISTEMA SOLAR', es:'GALAXY 1 · SOLAR SYSTEM'},
+    teach:{en:'PALABRAS', es:'WORDS'}, mood:'solar',
     stations:[
       {body:'sol',     name:{en:'SOL',     es:'SUN'},     x:70,  y:285, r:30, color:'#ffb703', mission:0},
       {body:'mercurio',name:{en:'MERCURIO',es:'MERCURY'}, x:152, y:205, r:12, color:'#b8a89a', mission:1},
@@ -351,14 +356,31 @@ const GALAXIES=[
       {body:'saturno', name:{en:'SATURNO', es:'SATURN'},  x:568, y:298, r:21, color:'#e8d193', ring:true, mission:null},
       {body:'urano',   name:{en:'URANO',   es:'URANUS'},  x:626, y:186, r:17, color:'#7df9e8', mission:null},
       {body:'neptuno', name:{en:'NEPTUNO', es:'NEPTUNE'}, x:668, y:332, r:17, color:'#5e7dff', mission:null},
-    ],
-    teasers:[
-      {galaxy:2, x:612, y:58,  r:24, cols:['#b77dff','#7df9ff'], name:{en:'GALAXIA 2', es:'GALAXY 2'}},
-      {galaxy:3, x:102, y:466, r:21, cols:['#7cff6b','#ffd23f'], name:{en:'GALAXIA 3', es:'GALAXY 3'}},
     ] },
-  /* Galaxia 2 y Galaxia 3 ya existen como avance en el mapa (teasers);
-     sus estaciones se añaden aquí el día que se construyan, sin rediseñar. */
+  { id:2, name:{en:'GALAXIA 2', es:'GALAXY 2'}, teach:{en:'FRASES', es:'PHRASES'}, mood:'violet',
+    teaser:{x:612, y:58, r:24, cols:['#b77dff','#7df9ff']}, locked:true },
+  { id:3, name:{en:'GALAXIA 3', es:'GALAXY 3'}, teach:{en:'CONVERSACIÓN', es:'CONVERSATION'}, mood:'jade',
+    teaser:{x:102, y:466, r:21, cols:['#7cff6b','#ffd23f']}, locked:true },
 ];
+/* Evolución de la nave (avatar del jugador en el mapa): la forma base es el
+   DA.0V4 del motor (se dibuja desde SHAPES.arrow); cada galaxia conquistada
+   desbloquea la siguiente forma. El arte completo por tier llega con el
+   contenido de cada galaxia; la distinción visible (aura, escala, estela) ya
+   funciona desde el código. */
+const SHIP_TIERS=[
+  {tier:1, glow:'#7df9ff', trail:'#bff9ff', scale:.55, name:{en:'DA.0V4 · FORMA BASE',   es:'DA.0V4 · BASE FORM'}},
+  {tier:2, glow:'#b77dff', trail:'#d0a8ff', scale:.62, name:{en:'DA.0V4 · FORMA NOVA',    es:'DA.0V4 · NOVA FORM'}},
+  {tier:3, glow:'#ffd23f', trail:'#ffe08a', scale:.70, name:{en:'DA.0V4 · FORMA ESTELAR', es:'DA.0V4 · STELLAR FORM'}},
+];
+function conqueredGalaxies(){ return GALAXIES.filter(g=>g.stations&&g.stations.every(st=>!st.mission||isDone(st.mission,mode))).length; }
+function shipTier(){ return Math.min(1+conqueredGalaxies(),SHIP_TIERS.length); }
+function shipStation(){ let best=null,bk=-1;
+  GALAXIES.forEach((g,gi)=>{ if(!g.stations) return; g.stations.forEach((st,si)=>{ if(!st.mission) return;
+    const s=stationState(st); if((s==='done'||s==='current')&&(gi*100+si)>bk){ bk=gi*100+si; best=st; } }); });
+  return best||GALAXIES[0].stations[1];
+}
+/* Cometa diario: una ronda rápida de ~60 s, una vez por día. Posición libre del mapa. */
+const COMET_NODE={x:468, y:442, r:16};
 function stationState(st){
   if(st.mission===0) return 'base';
   if(st.mission){
@@ -439,23 +461,77 @@ function drawPlanet(g,st,sstate,t){
 function drawMap(){
   const g=mapCtx;
   g.clearRect(0,0,W,H); g.drawImage(getMapBg(),0,0);
-  const G=GALAXIES[0], sts=G.stations;
-  /* ruta de viaje: línea punteada que une las estaciones en orden */
+  /* ruta de viaje: línea punteada que une las estaciones de todas las
+     galaxias construidas, en orden */
+  const sts=[]; GALAXIES.forEach(gx=>{ if(gx.stations) sts.push(...gx.stations); });
   g.save(); g.strokeStyle='rgba(193,18,31,.4)'; g.lineWidth=5; g.setLineDash([2,10]);
   g.beginPath(); sts.forEach((st,i)=>{ if(i===0)g.moveTo(st.x,st.y); else g.lineTo(st.x,st.y); }); g.stroke();
   g.strokeStyle='rgba(245,242,234,.5)'; g.lineWidth=1.6; g.setLineDash([6,9]); g.lineDashOffset=-(frame*.4)%15;
   g.beginPath(); sts.forEach((st,i)=>{ if(i===0)g.moveTo(st.x,st.y); else g.lineTo(st.x,st.y); }); g.stroke(); g.restore();
-  /* galaxias lejanas (avance) */
-  for(const tz of G.teasers){
-    drawSpiral(g,tz.x,tz.y,tz.r,tz.cols,.75,frame*.004+tz.galaxy);
+  /* galaxias futuras: avance lejano con su tipo de enseñanza (escalera) */
+  for(const gx of GALAXIES){ const tz=gx.teaser; if(!tz) continue;
+    drawSpiral(g,tz.x,tz.y,tz.r,tz.cols,.75,frame*.004+gx.id);
     g.save(); g.textAlign='center'; g.textBaseline='middle'; g.font='800 11.5px Archivo,sans-serif';
     g.fillStyle='#cfc9bb'; g.shadowColor='#000'; g.shadowBlur=4;
-    g.fillText(tz.name[mode],tz.x,tz.y+tz.r+14);
+    g.fillText(gx.name[mode]+' · '+gx.teach[mode],tz.x,tz.y+tz.r+14);
     g.font='700 10px Archivo,sans-serif'; g.fillStyle='#8f8a7d';
     g.fillText(mode==='es'?'COMING SOON':'PRÓXIMAMENTE',tz.x,tz.y+tz.r+27);
     g.font='12px sans-serif'; g.fillText('🔒',tz.x+tz.r+8,tz.y-tz.r-2); g.restore();
   }
+  drawCometNode(g);
   for(const st of sts) drawPlanet(g,st,stationState(st),frame);
+  drawShipOnMap(g);
+}
+/* cometa diario en el mapa: cabeza brillante con cola, solo si no se jugó hoy */
+function drawCometNode(g){
+  if(!cometAvailable()) return;
+  const c=COMET_NODE, t=frame;
+  g.save(); g.translate(c.x,c.y);
+  const ang=.6+Math.sin(t*.008)*.15;
+  for(let i=1;i<=7;i++){ g.save(); g.globalAlpha=.16*(1-i/8); g.fillStyle='#7df9ff';
+    g.beginPath(); g.arc(-Math.cos(ang)*i*9,-Math.sin(ang)*i*9,c.r*(1-i*.09),0,7); g.fill(); g.restore(); }
+  const gr=g.createRadialGradient(-3,-3,1,0,0,c.r);
+  gr.addColorStop(0,'#ffffff'); gr.addColorStop(.5,'#bff9ff'); gr.addColorStop(1,'#4da3ff');
+  g.shadowColor='#7df9ff'; g.shadowBlur=18; g.fillStyle=gr;
+  g.beginPath(); g.arc(0,0,c.r*(1+Math.sin(t*.1)*.06),0,7); g.fill();
+  g.restore();
+  g.save(); g.textAlign='center'; g.textBaseline='middle'; g.font='800 11.5px Archivo,sans-serif';
+  g.fillStyle='#bff9ff'; g.shadowColor='#000'; g.shadowBlur=4;
+  g.fillText(mode==='es'?'☄️ DAILY COMET':'☄️ COMETA DIARIO',c.x,c.y+c.r+14);
+  g.font='700 10px Archivo,sans-serif'; g.fillStyle='#9fd8de';
+  g.fillText(mode==='es'?'ONE 60 s ROUND · TODAY ONLY':'RONDA DE 60 s · SOLO HOY',c.x,c.y+c.r+27);
+  g.restore();
+}
+/* nave del jugador (DA.0V4 desde SHAPES del motor) sobre el mapa: vive en su
+   estación actual y vuela a la estación elegida antes de empezar la misión */
+let shipX=null, shipY=null, mapFlyTo=null, mapFlyT=0;
+function drawShipArrow(g,x,y,tilt,S,sc){
+  const sh=SHAPES[S.shape]; if(!sh) return;
+  g.save(); g.translate(x,y); g.rotate(tilt); g.scale(sc,sc);
+  const fl=8+Math.sin(frame*.8)*4;
+  g.shadowColor='#ff9f1c'; g.shadowBlur=16; g.fillStyle='#ff9f1c';
+  for(const f of sh.flames){ g.beginPath(); g.moveTo(f[0]-f[2],f[1]); g.lineTo(f[0],f[1]+fl); g.lineTo(f[0]+f[2],f[1]); g.fill(); }
+  g.shadowColor=S.color; g.shadowBlur=18; g.strokeStyle=S.color; g.lineWidth=2.5; g.fillStyle='#1a0b2e';
+  g.beginPath(); sh.hull.forEach((v,i)=>{ if(i%2===0){ if(i===0)g.moveTo(v,sh.hull[i+1]); else g.lineTo(v,sh.hull[i+1]); } });
+  g.closePath(); g.fill(); g.stroke();
+  g.fillStyle=S.color; g.beginPath(); g.arc(sh.core[0],sh.core[1],sh.core[2],0,7); g.fill();
+  g.restore();
+}
+function drawShipOnMap(g){
+  const t=SHIP_TIERS[shipTier()-1];
+  let tx,ty;
+  if(mapFlyTo){ tx=mapFlyTo.x; ty=mapFlyTo.y; mapFlyT--;
+    if(mapFlyT<=0){ mapFlyTo=null; hidePanels(); startMission(); return; } }
+  else { const st=shipStation(); tx=st.x; ty=st.y-st.r-26; }
+  if(shipX===null){ shipX=tx; shipY=ty; }
+  shipX+=(tx-shipX)*.075; shipY+=(ty-shipY)*.075;
+  /* estela del tier */
+  g.save(); g.globalAlpha=.35+Math.sin(frame*.15)*.12; g.fillStyle=t.trail;
+  g.beginPath(); g.arc(shipX,shipY+16*t.scale,3.2*t.scale*1.6,0,7); g.fill(); g.restore();
+  drawShipArrow(g,shipX,shipY,Math.sin(frame*.045)*.09,{color:t.glow,shape:'arrow'},t.scale*(1+Math.sin(frame*.09)*.03));
+  g.save(); g.textAlign='center'; g.textBaseline='middle'; g.font='700 9.5px Archivo,sans-serif';
+  g.fillStyle=t.glow; g.shadowColor='#000'; g.shadowBlur=4;
+  g.fillText(t.name[mode],shipX,shipY-20); g.restore();
 }
 function tapStation(st){
   const s=stationState(st);
@@ -463,18 +539,23 @@ function tapStation(st){
   if(st.mission){
     if(s==='locked'){ showToast((mode==='es'?'🔒 MISSION 02 LOCKED':'🔒 MISIÓN 02 BLOQUEADA')+'<small>'+(mode==='es'?'Master the previous mission first':'Domina la misión anterior primero')+'</small>',2200); return; }
     curMission=st.mission; WORDS=MISSIONS[curMission-1].words;
-    hidePanels(); startMission(); return;
+    mapFlyTo={x:st.x, y:st.y-st.r-26}; mapFlyT=70; sfx('ui');   /* la DA.0V4 vuela a la estación… y la misión arranca al llegar */
+    return;
   }
   showToast('🔒 '+(mode==='es'?'COMING SOON':'PRÓXIMAMENTE')+'<small>'+(mode==='es'?'This station arrives with a future mission':'Esta estación llega con una misión futura')+'</small>',2000);
 }
 mapCv.addEventListener('pointerdown',e=>{
   initAudio();
+  if(mapFlyTo) return;   /* la nave ya va en camino */
   const r=mapCv.getBoundingClientRect(), p=e.touches?e.touches[0]:e;
   const px=(p.clientX-r.left)*W/r.width, py=(p.clientY-r.top)*H/r.height;
-  const G=GALAXIES[0];
-  for(const tz of G.teasers){ if(Math.hypot(tz.x-px,tz.y-py)<tz.r+18){
-    showToast('🌌 '+tz.name[mode]+'<small>'+(mode==='es'?'COMING SOON · a 50–100 level stage':'PRÓXIMAMENTE · una etapa de 50–100 niveles')+'</small>',2400); return; } }
-  for(const st of G.stations){ if(Math.hypot(st.x-px,st.y-py)<st.r+16){ tapStation(st); return; } }
+  if(cometAvailable()&&Math.hypot(COMET_NODE.x-px,COMET_NODE.y-py)<COMET_NODE.r+20){
+    hidePanels(); startComet(); return; }
+  for(const gx of GALAXIES){ const tz=gx.teaser; if(!tz) continue;
+    if(Math.hypot(tz.x-px,tz.y-py)<tz.r+18){
+      showToast('🌌 '+gx.name[mode]+' · '+gx.teach[mode]+'<small>'+(mode==='es'?'COMING SOON · a 50–100 level stage':'PRÓXIMAMENTE · una etapa de 50–100 niveles')+'</small>',2400); return; } }
+  for(const gx of GALAXIES){ if(!gx.stations) continue;
+    for(const st of gx.stations){ if(Math.hypot(st.x-px,st.y-py)<st.r+16){ tapStation(st); return; } } }
 });
 
 /* ---------- motor heredado: utilidades ---------- */
@@ -591,6 +672,7 @@ setInterval(musicTick,60);
 /* ================= LÓGICA DE LA MISIÓN ================= */
 let state='menu', frame=0;
 let player=null, bullets=[], targets=[], lasers=[];
+let cometMode=false, comet=null;   /* cometa diario (ampliación David 24 oct) */
 let lives=3, mastered=new Set(), queue=[], target=null;
 let graceT=0, interT=0, runT=0, fireT=0, bannerT=0;
 let fireHeld=false;
@@ -599,11 +681,14 @@ const $=id=>document.getElementById(id);
 
 function shuffled(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
 
-function startMission(){
-  initAudio(); SAVE.plays++;
-  const today=new Date().toLocaleDateString('en-CA');   /* día local YYYY-MM-DD: alimenta la racha */
+function recordDay(){   /* registra el día local de juego (alimenta la racha) */
+  const today=new Date().toLocaleDateString('en-CA');
   if(!SAVE.playDays) SAVE.playDays=[];
   if(!SAVE.playDays.includes(today)){ SAVE.playDays.push(today); if(SAVE.playDays.length>60) SAVE.playDays=SAVE.playDays.slice(-60); }
+}
+function startMission(){
+  initAudio(); SAVE.plays++;
+  recordDay();
   persist(); checkAch();
   lives=3; mastered=new Set(); runT=0; bullets=[]; parts=[]; floaters=[]; lasers=[];
   player={x:W/2, y:H-72, vx:0, vy:0, tilt:0, inv:120};   // ← 2 s de gracia al aparecer (fix local 1)
@@ -618,7 +703,8 @@ function pickTarget(){
   return pool[(Math.random()*pool.length)|0];
 }
 function nextRound(first){
-  target=pickTarget(); if(!target){ finishMission(); return; }
+  if(cometMode){ target=cometWord(); }
+  else { target=pickTarget(); if(!target){ finishMission(); return; } }
   const others=shuffled(WORDS.filter(w=>LK(w)!==LK(target))).slice(0,3);
   const opts=shuffled([target].concat(others));
   const lanes=[105,265,425,585];
@@ -636,6 +722,7 @@ function showBanner(){
 }
 function hitTarget(tg){
   if(tg.gone) return;
+  if(cometMode){ hitComet(tg); return; }
   if(LK(tg.word)===LK(target)){
     /* ACIERTO: explota como en el motor, suena la pronunciación y se muestra el significado */
     tg.gone=true;
@@ -657,6 +744,55 @@ function hitTarget(tg){
       $('hud').classList.remove('on'); $('failPanel').classList.add('on'); }
   }
 }
+/* ---------- COMETA DIARIO: ronda rápida de ~60 s, una vez por día ----------
+   La cola sale de la lista de repaso primero y luego de las palabras de la
+   misión activa. Es práctica pura: no concede dominio ni toca el repaso,
+   pero sí monedas, XP, el día de juego (racha) y queda sellado por fecha. */
+function cometAvailable(){ return SAVE.lastComet!==new Date().toLocaleDateString('en-CA'); }
+function cometPool(){
+  const rk=reviewFor(curMission,mode), byK={}; WORDS.forEach(w=>byK[LK(w)]=w);
+  const review=shuffled(rk.map(k=>byK[k]).filter(Boolean));
+  const rest=shuffled(WORDS.filter(w=>!rk.includes(LK(w))));
+  return rest.concat(review);   /* se consume con pop(): el repaso sale primero */
+}
+function cometWord(){ if(!comet.queue.length) comet.queue=shuffled(WORDS.slice()); return comet.queue.pop(); }
+function startComet(){
+  initAudio();
+  comet={queue:cometPool(), tLeft:3600, hits:0}; cometMode=true;   /* 3600 ticks a 60 Hz = ~60 s */
+  recordDay(); SAVE.plays++; persist(); checkAch();
+  lives=3; bullets=[]; parts=[]; floaters=[]; lasers=[];
+  player={x:W/2, y:H-72, vx:0, vy:0, tilt:0, inv:60};
+  state='play'; hidePanels(); $('hud').classList.add('on');
+  nextRound(true); updateHUD();
+}
+function hitComet(tg){
+  if(LK(tg.word)===LK(target)){
+    tg.gone=true;
+    burst(tg.x,tg.y,TCOL[WORDS.indexOf(tg.word)],26,5.5); sfx('boom');
+    playWord(tg.word);
+    SAVE.coins+=5; SAVE.xp+=10; persist(); checkAch();
+    addFloat(tg.x,tg.y-56,'+10 XP','#7df9ff',1); addFloat(tg.x,tg.y-30,'+5 🪙','#ffd23f',0);
+    comet.hits++; showBanner(); updateHUD();
+    targets.forEach(o=>{ if(!o.gone&&o!==tg){ o.gone=true; burst(o.x,o.y,'#5a5470',10,3); } });
+    interT=70;
+  } else {
+    tg.flashT=28; tg.gone=true;
+    burst(tg.x,tg.y,'#ff2a3c',12,3.5); sfx('hit');
+    addFloat(tg.x,tg.y-52,'✖','#ff2a3c',1);
+    lives--; updateHUD();
+    if(lives<=0) endComet(false);
+  }
+}
+function endComet(done){
+  cometMode=false;
+  SAVE.lastComet=new Date().toLocaleDateString('en-CA'); recordDay(); persist(); checkAch();
+  sfx(done?'win':'hit');
+  $('doneTitle').textContent=mode==='es'?'☄️ DAILY COMET COMPLETE!':'☄️ ¡COMETA DIARIO COMPLETADO!';
+  $('doneText').innerHTML=(mode==='es'?('You nailed <b>'+comet.hits+'</b> in 60 seconds. It counts toward your streak.'):('Acertaste <b>'+comet.hits+'</b> en 60 segundos. Cuenta para tu racha.'))+'<br>'+(mode==='es'?'A new comet arrives tomorrow.':'Mañana llega un cometa nuevo.');
+  $('doneCoins').textContent=SAVE.coins; $('doneXp').textContent=SAVE.xp;
+  renderReview($('doneReview'),$('doneReviewRows'),reviewList(),mode);
+  $('hud').classList.remove('on'); $('donePanel').classList.add('on'); state='done';
+}
 function finishMission(){
   state='done'; SAVE[doneKey(curMission,mode)]=true; persist();
   unlockAch('primera'); if(lives>=3) unlockAch('perfecta'); checkAch();
@@ -669,7 +805,9 @@ function finishMission(){
 }
 function updateHUD(){
   $('hudLives').textContent='♥'.repeat(Math.max(0,lives))+'♡'.repeat(Math.max(0,3-lives));
-  $('hudProg').textContent=mastered.size+'/'+WORDS.length;
+  if(cometMode&&comet){ const s=Math.max(0,Math.ceil(comet.tLeft/60));
+    $('hudProg').textContent='☄️ '+comet.hits+' · 0:'+String(s).padStart(2,'0'); }
+  else $('hudProg').textContent=mastered.size+'/'+WORDS.length;
   $('hudCoins').textContent=SAVE.coins; $('hudXp').textContent=SAVE.xp;
 }
 function hidePanels(){ document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on')); }
@@ -721,7 +859,7 @@ function refreshMenu(){
   $('btnMap').textContent=es?'🗺️  GALAXY MAP':'🗺️  MAPA DE LA GALAXIA';
   $('mapTitle').textContent=es?'🗺️ GALAXY MAP':'🗺️ MAPA DE LA GALAXIA';
   $('mapSub').textContent=GALAXIES[0].name[mode];
-  $('mapHint').textContent=es?'Tap an unlocked planet to travel to its mission · 🔒 = master the previous mission · Galaxies 2 & 3: coming soon (50–100 level stages)':'Toca un planeta desbloqueado para viajar a su misión · 🔒 = domina la misión anterior · Galaxias 2 y 3: próximamente (etapas de 50–100 niveles)';
+  $('mapHint').textContent=(es?'Tap an unlocked planet to travel to its mission · 🔒 = master the previous mission · Galaxies 2 & 3: coming soon (50–100 level stages)':'Toca un planeta desbloqueado para viajar a su misión · 🔒 = domina la misión anterior · Galaxias 2 y 3: próximamente (etapas de 50–100 niveles)')+(cometAvailable()?(es?' · ☄️ The daily comet is here!':' · ☄️ ¡El cometa diario está aquí!'):'');
   $('btnMapBack').textContent=es?'← Back to menu':'← Volver al menú';
   renderReview($('menuReview'),$('menuReviewRows'),reviewFor(curMission,'en'),'en');
   renderReview($('menuReviewEs'),$('menuReviewEsRows'),reviewFor(curMission,'es'),'es');
@@ -797,6 +935,7 @@ function update(){
   runT++;
   if(graceT>0) graceT--;
   if(bannerT>0) bannerT--;
+  if(cometMode){ comet.tLeft--; updateHUD(); if(comet.tLeft<=0){ endComet(true); return; } }
   if(interT>0){ interT--; if(interT===0 && state==='play') nextRound(false); }
   /* jugador */
   const p=player, S=SHIP;
@@ -897,9 +1036,9 @@ $('btnMapBack').onclick=()=>{ state='menu'; refreshMenu(); hidePanels(); $('menu
 $('swEn').onclick=()=>{ initAudio(); setMode('en'); refreshMenu(); };
 $('swEs').onclick=()=>{ initAudio(); setMode('es'); refreshMenu(); };
 $('btnRetry').onclick=()=>{ hidePanels(); startMission(); };
-$('btnFailMenu').onclick=()=>{ state='menu'; refreshMenu(); hidePanels(); $('menuPanel').classList.add('on'); };
-$('btnDoneMenu').onclick=()=>{ state='menu'; refreshMenu(); hidePanels(); $('menuPanel').classList.add('on'); };
-$('btnMenu').onclick=()=>{ state='menu'; $('hud').classList.remove('on'); refreshMenu(); hidePanels(); $('menuPanel').classList.add('on'); };
+$('btnFailMenu').onclick=()=>{ cometMode=false; state='menu'; refreshMenu(); hidePanels(); $('menuPanel').classList.add('on'); };
+$('btnDoneMenu').onclick=()=>{ cometMode=false; state='menu'; refreshMenu(); hidePanels(); $('menuPanel').classList.add('on'); };
+$('btnMenu').onclick=()=>{ cometMode=false; state='menu'; $('hud').classList.remove('on'); refreshMenu(); hidePanels(); $('menuPanel').classList.add('on'); };
 $('btnRepeat').onclick=()=>{ if(target) playWord(target); };
 const bf=$('btnFire');
 bf.addEventListener('pointerdown',e=>{ e.preventDefault(); initAudio(); fireHeld=true; fireT=0; });
@@ -911,7 +1050,7 @@ function togglePause(){
 }
 $('btnPause').onclick=()=>{ initAudio(); togglePause(); };
 $('btnResume').onclick=()=>{ togglePause(); };
-$('btnPauseMenu').onclick=()=>{ state='menu'; $('hud').classList.remove('on'); refreshMenu(); hidePanels(); $('menuPanel').classList.add('on'); };
+$('btnPauseMenu').onclick=()=>{ cometMode=false; state='menu'; $('hud').classList.remove('on'); refreshMenu(); hidePanels(); $('menuPanel').classList.add('on'); };
 $('btnMute').onclick=function(){ muted=!muted; this.textContent=muted?'🔇':'🎵'; };
 let rewardTimer=null;
 $('btnReward').onclick=()=>{
