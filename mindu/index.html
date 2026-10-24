@@ -205,11 +205,14 @@
         <span class="pill">⭐ <span id="doneXp">0</span> XP</span>
       </div>
       <button class="bigbtn" id="btnReward" type="button">🎁 &nbsp;RECOMPENSA: 80 s DE ASPIT</button>
+      <button class="bigbtn" id="btnNext" type="button" style="display:none;background:linear-gradient(180deg,#14424e,#0d2b33);border:1px solid #7df9ff88;box-shadow:0 0 18px rgba(125,249,255,.4)">▶ &nbsp;SIGUIENTE MISIÓN</button>
+      <div class="keys" id="doneLastNote" style="display:none">Es la última misión disponible por ahora — vienen más misiones. Tu recompensa y el mapa siguen abiertos.</div>
       <div class="review" id="doneReview" style="display:none">
         <h3>📚 PARA SEGUIR REPASANDO</h3>
         <div id="doneReviewRows"></div>
       </div>
-      <br><button class="ghostbtn" id="btnDoneMenu" type="button">Volver al menú</button>
+      <br><button class="ghostbtn" id="btnDoneMap" type="button">🗺️ &nbsp;MAPA</button>
+      <button class="ghostbtn" id="btnDoneMenu" type="button">Volver al menú</button>
     </div>
   </div>
 
@@ -398,7 +401,11 @@ function getMapBg(){
   g.fillStyle='#04050c'; g.fillRect(0,0,W,H);
   let seed=987654; const rr=()=>{ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; };
   g.globalCompositeOperation='lighter';
-  const cols=['#C1121F','#2a0d3a','#0d2a4a','#123'];
+  /* OJO: los sufijos de alfa (col+'18', col+'00') exigen hex de 6 dígitos.
+     Con '#123' se formaba '#12318', un color inválido que addColorStop RECHAZA
+     con SyntaxError en navegadores reales → drawMap moría antes de pintar y el
+     mapa salía negro en el iPhone de David (bug del 24 oct). No acortar. */
+  const cols=['#C1121F','#2a0d3a','#0d2a4a','#112233'];
   for(let i=0;i<10;i++){ const x=rr()*W, y=rr()*H, rad=90+rr()*170, col=cols[i%4];
     const ng=g.createRadialGradient(x,y,0,x,y,rad); ng.addColorStop(0,col+'18'); ng.addColorStop(1,col+'00');
     g.fillStyle=ng; g.fillRect(x-rad,y-rad,rad*2,rad*2); }
@@ -792,6 +799,23 @@ function endComet(done){
   $('doneCoins').textContent=SAVE.coins; $('doneXp').textContent=SAVE.xp;
   renderReview($('doneReview'),$('doneReviewRows'),reviewList(),mode);
   $('hud').classList.remove('on'); $('donePanel').classList.add('on'); state='done';
+  setupDoneNext(true);
+}
+/* Panel de fin SIN callejón (reporte de David, 24 oct): si existe una misión
+   siguiente y ya está desbloqueada, el panel ofrece «SIGUIENTE MISIÓN» como
+   acción directa; si la dominada era la última disponible, lo dice con una
+   nota en vez de dejar al jugador sin camino. En el cometa no aplica. */
+function setupDoneNext(isComet){
+  const bn=$('btnNext'), note=$('doneLastNote');
+  let show=false;
+  if(!isComet){ const nxt=curMission+1;
+    if(nxt<=MISSIONS.length && isDone(nxt-1,mode)){
+      bn.textContent=mode==='es'?('▶  NEXT: MISSION 0'+nxt):('▶  SIGUIENTE MISIÓN 0'+nxt);
+      show=true; } }
+  bn.style.display=show?'inline-block':'none';
+  const last=!isComet&&!show;
+  note.style.display=last?'block':'none';
+  if(last) note.textContent=mode==='es'?'This is the last mission available for now — more missions are coming. Your reward and the map stay open.':'Es la última misión disponible por ahora — vienen más misiones. Tu recompensa y el mapa siguen abiertos.';
 }
 function finishMission(){
   state='done'; SAVE[doneKey(curMission,mode)]=true; persist();
@@ -802,6 +826,7 @@ function finishMission(){
   $('doneCoins').textContent=SAVE.coins; $('doneXp').textContent=SAVE.xp;
   renderReview($('doneReview'),$('doneReviewRows'),reviewList(),mode);
   $('hud').classList.remove('on'); $('donePanel').classList.add('on');
+  setupDoneNext(false);
 }
 function updateHUD(){
   $('hudLives').textContent='♥'.repeat(Math.max(0,lives))+'♡'.repeat(Math.max(0,3-lives));
@@ -811,6 +836,33 @@ function updateHUD(){
   $('hudCoins').textContent=SAVE.coins; $('hudXp').textContent=SAVE.xp;
 }
 function hidePanels(){ document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on')); }
+/* ---------- navegación a prueba de bloqueos (reporte de David, 24 oct) ----------
+   Una sola puerta de salida para TODOS los botones de menú/mapa: primero se
+   desmonta la recompensa y se cambia estado + panel visible, y SOLO DESPUÉS
+   se refresca el menú, protegido: un fallo cosmético jamás puede dejar al
+   jugador atrapado en un panel con botones muertos. */
+function killRewardFrame(){
+  if(rewardTimer){ clearInterval(rewardTimer); rewardTimer=null; }
+  const f=$('rewardFrame'); if(!f) return;
+  try{ f.src='about:blank'; }catch(_){ }
+  /* sustituir el nodo garantiza que el documento de ASPIT (su bucle, su audio,
+     su service worker) muere del todo: un iframe vivo pero oculto puede seguir
+     cargando el hilo principal del webview y dar sensación de congelamiento */
+  if(f.parentNode){ const nf=document.createElement('iframe');
+    nf.id='rewardFrame'; nf.title=f.title||'ASPIT';
+    if(nf.setAttribute) nf.setAttribute('allow','autoplay');
+    nf.src='about:blank'; f.parentNode.replaceChild(nf,f); }
+}
+function goMenu(){
+  killRewardFrame(); cometMode=false; fireHeld=false;
+  state='menu'; $('hud').classList.remove('on');
+  hidePanels(); $('menuPanel').classList.add('on');
+  try{ refreshMenu(); }catch(_){ }
+}
+function goMap(){
+  initAudio(); state='map'; hidePanels(); $('mapPanel').classList.add('on');
+  drawMap();   /* primera pintura inmediata, sin esperar al siguiente frame */
+}
 function renderReview(box,rows,list,lang){
   lang=lang||'en'; list=list||SAVE.review;
   if(!list.length){ box.style.display='none'; return; }
@@ -1016,29 +1068,36 @@ function draw(){
 
 /* bucle con paso fijo a 60 Hz (del motor) */
 let last=performance.now(), acc=0;
+window.__loopErrs=[];
 function loop(now){
   requestAnimationFrame(loop);
-  let dt=(now-last)/1000; last=now; if(dt>.25) dt=.25; acc+=dt;
-  while(acc>=1/60){ update(); acc-=1/60; }
-  $('btnFire').classList.toggle('on', state==='play'); if(state!=='play') fireHeld=false;
-  draw();
+  try{
+    let dt=(now-last)/1000; last=now; if(dt>.25) dt=.25; acc+=dt;
+    while(acc>=1/60){ update(); acc-=1/60; }
+    $('btnFire').classList.toggle('on', state==='play'); if(state!=='play') fireHeld=false;
+    draw();
+  }catch(e){ window.__loopErrs.push(String(e&&e.message||e)); }   /* red de seguridad: un error de un frame nunca congela el juego */
 }
 requestAnimationFrame(loop);
 
 /* ---------- botones / paneles ---------- */
 function fit(){ const s=Math.min(innerWidth/W,innerHeight/H); cv.style.width=(W*s)+'px'; cv.style.height=(H*s)+'px'; }
 addEventListener('resize',fit); fit();
+addEventListener('resize',()=>{ if(state==='map'){ try{ drawMap(); }catch(_){ } } });   /* rotación/redimensión: el mapa se repinta al momento */
 $('btnPlay').onclick=()=>{ hidePanels(); startMission(); };
 $('msM1').onclick=()=>{ initAudio(); selectMission(1); };
 $('msM2').onclick=()=>{ initAudio(); selectMission(2); };
-$('btnMap').onclick=()=>{ initAudio(); state='map'; hidePanels(); $('mapPanel').classList.add('on'); };
-$('btnMapBack').onclick=()=>{ state='menu'; refreshMenu(); hidePanels(); $('menuPanel').classList.add('on'); };
+$('btnMap').onclick=()=>{ goMap(); };
+$('btnMapBack').onclick=()=>{ goMenu(); };
 $('swEn').onclick=()=>{ initAudio(); setMode('en'); refreshMenu(); };
 $('swEs').onclick=()=>{ initAudio(); setMode('es'); refreshMenu(); };
 $('btnRetry').onclick=()=>{ hidePanels(); startMission(); };
-$('btnFailMenu').onclick=()=>{ cometMode=false; state='menu'; refreshMenu(); hidePanels(); $('menuPanel').classList.add('on'); };
-$('btnDoneMenu').onclick=()=>{ cometMode=false; state='menu'; refreshMenu(); hidePanels(); $('menuPanel').classList.add('on'); };
-$('btnMenu').onclick=()=>{ cometMode=false; state='menu'; $('hud').classList.remove('on'); refreshMenu(); hidePanels(); $('menuPanel').classList.add('on'); };
+$('btnFailMenu').onclick=()=>{ goMenu(); };
+$('btnDoneMenu').onclick=()=>{ goMenu(); };
+$('btnDoneMap').onclick=()=>{ goMap(); };
+$('btnNext').onclick=()=>{ const n=curMission+1; if(n>MISSIONS.length) return;
+  cometMode=false; curMission=n; WORDS=MISSIONS[n-1].words; sfx('ui'); hidePanels(); startMission(); };
+$('btnMenu').onclick=()=>{ goMenu(); };
 $('btnRepeat').onclick=()=>{ if(target) playWord(target); };
 const bf=$('btnFire');
 bf.addEventListener('pointerdown',e=>{ e.preventDefault(); initAudio(); fireHeld=true; fireT=0; });
@@ -1050,7 +1109,7 @@ function togglePause(){
 }
 $('btnPause').onclick=()=>{ initAudio(); togglePause(); };
 $('btnResume').onclick=()=>{ togglePause(); };
-$('btnPauseMenu').onclick=()=>{ cometMode=false; state='menu'; $('hud').classList.remove('on'); refreshMenu(); hidePanels(); $('menuPanel').classList.add('on'); };
+$('btnPauseMenu').onclick=()=>{ goMenu(); };
 $('btnMute').onclick=function(){ muted=!muted; this.textContent=muted?'🔇':'🎵'; };
 let rewardTimer=null;
 $('btnReward').onclick=()=>{
@@ -1062,8 +1121,7 @@ $('btnReward').onclick=()=>{
     if(left<=0) endReward(); },1000);
 };
 function endReward(){
-  clearInterval(rewardTimer); rewardTimer=null;
-  $('rewardFrame').src='about:blank';
+  killRewardFrame();   /* temporizador parado + iframe desmontado de raíz */
   $('rewardPanel').classList.remove('on'); $('donePanel').classList.add('on'); state='done';
 }
 $('btnRewardEnd').onclick=endReward;
