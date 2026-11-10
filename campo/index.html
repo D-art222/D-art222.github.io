@@ -226,13 +226,14 @@
         <div class="chips">
           <span class="chip"><span class="dot"></span> Reco Roofing · visita <time>2:00 pm</time></span>
           <span class="chip"><span class="dot wait"></span> Carlos Service · visita <time>3:00 pm</time></span>
+          <span class="chip"><span class="dot"></span> Marco · parcela nueva · visita <time>4:00 pm</time></span>
           <span class="chip">Cosecha: último día de cada mes</span>
         </div>
       </header>
 
       <!-- ================= SCENE ================= -->
       <div class="scene-frame">
-        <svg viewBox="0 0 1200 560" role="img" aria-label="Ilustración de un campo con dos parcelas: la de Reco Roofing, activa, y la de Carlos, reservada">
+        <svg viewBox="0 0 1200 560" role="img" aria-label="Ilustración de un campo con tres parcelas: la de Reco Roofing, activa; la de Marco, nueva y personal, en el centro; y la de Carlos, reservada">
           <defs>
             <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stop-color="#F7EFCE"/>
@@ -246,6 +247,10 @@
             <linearGradient id="fieldR" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stop-color="#5C8A49"/>
               <stop offset="1" stop-color="#33592C"/>
+            </linearGradient>
+            <linearGradient id="fieldM" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#7FAE5C"/>
+              <stop offset="1" stop-color="#477A38"/>
             </linearGradient>
           </defs>
 
@@ -273,6 +278,8 @@
           <path d="M0 306 H1200 V560 H0 Z" fill="url(#field)"/>
           <!-- Carlos parcel ground (right) -->
           <path d="M668 306 H1200 V560 H668 Z" fill="url(#fieldR)" opacity=".55"/>
+          <!-- Marco parcel ground (center, its own plot — touches neither Reco's nor Carlos's) -->
+          <path d="M500 306 H700 L762 560 H438 Z" fill="url(#fieldM)" opacity=".6"/>
           <!-- furrows -->
           <g stroke="#2E5128" stroke-width="4" opacity=".5" fill="none">
             <path d="M600 308 L60 560"/><path d="M600 308 L230 560"/><path d="M600 308 L400 560"/>
@@ -307,6 +314,17 @@
             <path d="M820 508 v-13 M813 500 q7 -8 13 -1"/>
             <path d="M960 512 v-13 M953 504 q7 -8 13 -1"/>
             <path d="M1085 492 v-13 M1078 484 q7 -8 13 -1"/>
+          </g>
+          <!-- young plants: Marco parcel (center, flanking its own path) -->
+          <g stroke="#2C4E24" stroke-width="3.6" stroke-linecap="round" fill="none">
+            <path d="M512 438 v-16 M504 428 q8 -9 15 -1 M519 426 q9 -7 16 -2"/>
+            <path d="M540 502 v-18 M532 491 q8 -9 15 -1 M547 489 q9 -7 16 -2"/>
+            <path d="M700 442 v-16 M692 432 q8 -9 15 -1 M707 430 q9 -7 16 -2"/>
+            <path d="M724 508 v-18 M716 497 q8 -9 15 -1 M731 495 q9 -7 16 -2"/>
+          </g>
+          <g fill="#C1121F">
+            <circle cx="512" cy="416" r="5.5"/><circle cx="540" cy="478" r="5.5"/>
+            <circle cx="700" cy="420" r="5.5"/><circle cx="724" cy="484" r="5.5"/>
           </g>
 
           <!-- fence -->
@@ -346,14 +364,14 @@
             <text x="918" y="222" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="600" font-size="16.5" fill="#3D2C12">Parcela reservada · visita 3:00 pm</text>
           </g>
 
-          <!-- ===== SIGN: FUTURE ===== -->
-          <g class="parcel-sign" id="sign-futura" data-parcel="futura" tabindex="0" role="button" aria-label="Ver la parcela siguiente, todavía libre" opacity=".82">
-            <ellipse class="sign-glow" cx="600" cy="330" rx="86" ry="48" fill="#FFE9A8"/>
-            <rect x="594" y="316" width="11" height="62" rx="4" fill="#7A5A33"/>
-            <rect x="520" y="252" width="160" height="66" rx="9" fill="#8A683C"/>
-            <rect x="530" y="261" width="140" height="48" rx="6" fill="#A87F45"/>
-            <text x="600" y="282" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="800" font-size="16" fill="#FFF6DC">PRÓXIMA</text>
-            <text x="600" y="302" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="800" font-size="16" fill="#FFF6DC">PARCELA</text>
+          <!-- ===== SIGN: MARCO ===== -->
+          <g class="parcel-sign" id="sign-marco" data-parcel="marco" tabindex="0" role="button" aria-label="Ver la parcela de Marco">
+            <ellipse class="sign-glow" cx="600" cy="195" rx="126" ry="82" fill="#FFE9A8" fill-opacity=".6"/>
+            <rect x="592" y="238" width="15" height="118" rx="4" fill="#7A5A33"/>
+            <rect x="480" y="146" width="240" height="98" rx="10" fill="#8A683C"/>
+            <rect x="492" y="158" width="216" height="74" rx="7" fill="#A87F45"/>
+            <text x="600" y="196" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="800" font-size="31" fill="#FFF6DC" letter-spacing="1">MARCO</text>
+            <text x="600" y="222" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="600" font-size="15" fill="#3D2C12">Parcela nueva · 4:00 pm</text>
           </g>
         </svg>
         <div class="scene-bar">
@@ -391,13 +409,13 @@
         <div class="cols">
           <div class="card">
             <h3>El camino, paso a paso</h3>
-            <p class="hint">El mismo camino sirve para Reco hoy y para Carlos mañana.</p>
+            <p class="hint">El mismo camino sirve para Reco, para Carlos y para la parcela nueva de Marco — cada quien en la suya, sin cruzarse.</p>
             <ol class="steps">
               <li><div><b>David abre la parcela</b><span>El cliente queda sembrado en El Campo con su letrero y su hora de visita.</span></div></li>
               <li><div><b>David entrega el enlace y el protocolo</b><span>El agente del cliente recibe el link de El Campo y el texto del protocolo, que se pega una sola vez en su Muse.</span></div></li>
               <li><div><b>El agente anota durante el mes</b><span>Cada venta, lead o avance que el cliente le cuente, el agente lo guarda: diez segundos por nota.</span></div></li>
               <li><div><b>A fin de mes, el agente viene al Campo</b><span>Entra por el enlace, genera el reporte de su parcela en la estación y lo entrega firmado en la visita.</span></div></li>
-              <li><div><b>Baxter pasa en su hora y cosecha</b><span>Reco a las 2:00 pm, Carlos a las 3:00 pm. Baxter recoge el reporte y le entrega a David el resumen con la lectura que importa: ¿la estrategia vendió?, ¿qué sigue?</span></div></li>
+              <li><div><b>Baxter pasa en su hora y cosecha</b><span>Reco a las 2:00 pm, Carlos a las 3:00 pm y Marco a las 4:00 pm — cada parcela con su hora, sin cruzarse. Baxter recoge el reporte y le entrega a David el resumen con la lectura que importa: ¿la estrategia vendió?, ¿qué sigue?</span></div></li>
             </ol>
           </div>
           <div class="card">
@@ -433,6 +451,7 @@ REGLA DE ORO: reporta solo lo que el cliente te contó o lo que puedas medir. Lo
                 <select id="f-parcel">
                   <option value="Reco Roofing">Reco Roofing</option>
                   <option value="Carlos Service">Carlos Service</option>
+                  <option value="Marco">Marco</option>
                 </select>
               </div>
               <div>
@@ -509,6 +528,13 @@ REGLA DE ORO: reporta solo lo que el cliente te contó o lo que puedas medir. Lo
             </div>
           </div>
           <div class="visit">
+            <div class="hour"><b>4:00 pm</b><span>Fin de mes</span></div>
+            <div>
+              <h3>Parcela de Marco</h3>
+              <p>La parcela nueva, apartada de la de Reco y de la de Carlos. Aquí reporta el agente de Marco: lo que le gusta, sus avances del mes y su siguiente paso.</p>
+            </div>
+          </div>
+          <div class="visit">
             <div class="hour"><b>—</b><span>Libre</span></div>
             <div>
               <h3>La próxima parcela</h3>
@@ -565,21 +591,22 @@ REGLA DE ORO: reporta solo lo que el cliente te contó o lo que puedas medir. Lo
             open: "Cuando David y Carlos cierren su acuerdo y su agente reciba el protocolo.",
             formValue: "Carlos Service"
           },
-          futura: {
-            badge: "Parcela libre",
-            badgeClass: "next",
-            name: "La próxima parcela",
-            biz: "El siguiente cliente que entre al sistema",
-            desc: "El Campo no se llena de una vez: crece parcela por parcela. Cada cliente nuevo trae su letrero, su agente y su hora de visita — y el recorrido de Baxter simplemente se alarga una parada más.",
+          marco: {
+            badge: "Parcela nueva",
+            badgeClass: "on",
+            name: "Marco",
+            biz: "Parcela personal · apartada de las demás",
+            desc: "La parcela nueva de Marco, sembrada en su propio terreno: no se mete en la de Oscar (Reco) ni en la de Carlos. Aquí solo entra lo de Marco — su agente reporta desde esta parcela, con su letrero y su hora propia.",
             brings: [
-              "Lo que ese negocio necesite medir: avances, leads y ventas",
-              "Qué funcionó y qué no funcionó, como en todas las parcelas",
-              "Su siguiente paso propuesto, para que David decida con datos"
+              "Lo que le gusta a Marco: gustos e intereses que él mismo comparta con su agente",
+              "Avances y novedades del mes que Marco quiera reportar",
+              "Qué funcionó y qué no funcionó para él",
+              "Su siguiente paso propuesto — y en lo que no aplique, «sin dato», como manda la regla de oro"
             ],
-            visit: "Se asigna al abrir la parcela",
-            last: "—",
-            open: "Cuando David diga «este cliente entra al Campo».",
-            formValue: "Reco Roofing"
+            visit: "Último día del mes · 4:00 pm",
+            last: "Todavía ninguno — su primera cosecha llega a fin de mes.",
+            open: "Ya está abierta: es la parcela nueva del Campo, separada de la de Reco y de la de Carlos.",
+            formValue: "Marco"
           }
         };
 
