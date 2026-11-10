@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>El Campo — El punto de encuentro de los agentes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,800;1,600&family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      :root{
+        --bg:#EFEAD9;
+        --paper:#FBF8EE;
+        --paper-2:#F3EEDC;
+        --ink:#1B1A12;
+        --ink-soft:#55523F;
+        --line:rgba(27,26,18,.16);
+        --red:#C1121F;
+        --green:#3E6B34;
+        --green-deep:#274A24;
+        --gold:#B9822C;
+        --shadow:0 18px 40px rgba(39,52,26,.16);
+        --radius:14px;
+      }
+      @media (prefers-color-scheme: dark){
+        :root{
+          --bg:#101208;
+          --paper:#1A1C10;
+          --paper-2:#22251A;
+          --ink:#F0EBDA;
+          --ink-soft:#B9B49C;
+          --line:rgba(240,235,218,.18);
+          --shadow:0 18px 40px rgba(0,0,0,.5);
+        }
+      }
+      *{box-sizing:border-box}
+      html{scroll-behavior:smooth}
+      body{
+        margin:0;
+        background:var(--bg);
+        color:var(--ink);
+        font-family:"Archivo",system-ui,sans-serif;
+        line-height:1.55;
+        -webkit-font-smoothing:antialiased;
+      }
+      .wrap{max-width:1120px;margin:0 auto;padding:28px 18px 64px}
+
+      /* ---------- Intro ---------- */
+      .intro{max-width:760px}
+      .intro h1{
+        font-family:"Playfair Display",Georgia,serif;
+        font-weight:800;
+        font-size:clamp(44px,8vw,76px);
+        line-height:.98;
+        margin:6px 0 14px;
+        letter-spacing:-.01em;
+      }
+      .intro h1 em{font-style:italic;color:var(--green-deep)}
+      @media (prefers-color-scheme: dark){ .intro h1 em{color:#9CC184} }
+      .intro p{font-size:clamp(16px,2.4vw,19px);color:var(--ink-soft);margin:0 0 20px;max-width:640px}
+      .intro p strong{color:var(--ink)}
+      .chips{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px}
+      .chip{
+        display:inline-flex;align-items:center;gap:8px;
+        background:var(--paper);border:1px solid var(--line);
+        border-radius:999px;padding:8px 14px;font-size:14px;font-weight:600;
+      }
+      .chip .dot{width:9px;height:9px;border-radius:50%;background:var(--green);flex:none}
+      .chip .dot.wait{background:var(--gold)}
+      .chip time{color:var(--red);font-weight:800}
+
+      /* ---------- Scene ---------- */
+      .scene-frame{
+        margin-top:26px;background:var(--paper);
+        border:1px solid var(--line);border-radius:20px;
+        box-shadow:var(--shadow);overflow:hidden;
+      }
+      .scene-frame svg{display:block;width:100%;height:auto}
+      .scene-bar{
+        display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;justify-content:space-between;
+        padding:12px 18px;border-top:1px solid var(--line);
+        font-size:13.5px;color:var(--ink-soft);
+      }
+      .scene-bar b{color:var(--ink)}
+      .parcel-sign{cursor:pointer;outline:none}
+      .parcel-sign .sign-glow{opacity:0;transition:opacity .25s}
+      .parcel-sign:hover .sign-glow,.parcel-sign:focus-visible .sign-glow{opacity:.55}
+      .parcel-sign.selected .sign-glow{opacity:.9}
+      .parcel-sign:focus-visible .sign-board{stroke:var(--red);stroke-width:3}
+      @media (prefers-reduced-motion: no-preference){
+        .cloud{animation:drift 46s linear infinite}
+        .cloud.c2{animation-duration:64s;animation-delay:-22s}
+        @keyframes drift{from{transform:translateX(-30px)}to{transform:translateX(30px)}}
+        .crow{animation:bob 3.4s ease-in-out infinite;transform-origin:334px 218px}
+        @keyframes bob{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-4deg)}}
+      }
+
+      /* ---------- Detail panel ---------- */
+      .detail{
+        margin-top:22px;background:var(--paper);border:1px solid var(--line);
+        border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;
+        display:grid;grid-template-columns:1.2fr .8fr;gap:26px;
+      }
+      .detail h2{
+        font-family:"Playfair Display",Georgia,serif;font-size:32px;margin:0 0 2px;line-height:1.1;
+      }
+      .detail .biz{color:var(--ink-soft);font-weight:600;margin:0 0 14px}
+      .badge{
+        display:inline-block;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+        padding:4px 10px;border-radius:999px;margin-bottom:12px;
+      }
+      .badge.on{background:var(--green);color:#F5F2EA}
+      .badge.wait{background:transparent;color:var(--gold);border:1.5px solid var(--gold)}
+      .badge.next{background:transparent;color:var(--ink-soft);border:1.5px dashed var(--line)}
+      .detail h3{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:18px 0 8px}
+      .detail ul{margin:0;padding-left:19px}
+      .detail li{margin-bottom:5px}
+      .factbox{background:var(--paper-2);border:1px solid var(--line);border-radius:10px;padding:16px 18px;height:fit-content}
+      .factbox dl{margin:0;display:grid;gap:12px}
+      .factbox dt{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
+      .factbox dd{margin:2px 0 0;font-weight:700;font-size:17px}
+      .factbox dd.small{font-size:14.5px;font-weight:600}
+      .btn{
+        appearance:none;border:0;cursor:pointer;font:inherit;font-weight:700;
+        background:var(--red);color:#FFF7EA;border-radius:10px;padding:12px 20px;
+        display:inline-block;text-decoration:none;text-align:center;
+      }
+      .btn:hover{filter:brightness(1.08)}
+      .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+      .btn.green{background:var(--green);color:#F5F2EA}
+      .detail .actions{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap}
+
+      /* ---------- Sections ---------- */
+      section.block{margin-top:52px}
+      section.block > h2{
+        font-family:"Playfair Display",Georgia,serif;font-size:clamp(28px,4.5vw,38px);
+        margin:0 0 6px;line-height:1.1;
+      }
+      section.block > p.lead{color:var(--ink-soft);max-width:680px;margin:0 0 22px;font-size:16.5px}
+      .cols{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+      .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px}
+      .card h3{margin:0 0 4px;font-size:19px}
+      .card p.hint{color:var(--ink-soft);font-size:14.5px;margin:0 0 18px}
+
+      form .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+      label{display:block;font-size:13px;font-weight:700;letter-spacing:.03em;margin-bottom:5px}
+      label span{color:var(--ink-soft);font-weight:500}
+      input,select,textarea{
+        width:100%;font:inherit;font-size:15px;color:var(--ink);
+        background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px 12px;
+      }
+      textarea{resize:vertical;min-height:64px}
+      input:focus,select:focus,textarea:focus{outline:2px solid var(--green);outline-offset:1px;border-color:transparent}
+      .full{grid-column:1/-1}
+      form .actions{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}
+      .report-out{
+        margin-top:18px;background:var(--green-deep);color:#EFEAD3;border-radius:10px;
+        padding:18px;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+        font-size:13.5px;line-height:1.65;white-space:pre-wrap;word-break:break-word;display:none;
+      }
+      .report-out.show{display:block}
+      .report-actions{display:none;gap:10px;flex-wrap:wrap;margin-top:12px}
+      .report-actions.show{display:flex}
+      .toast{
+        position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);
+        background:var(--ink);color:var(--bg);padding:11px 20px;border-radius:999px;
+        font-weight:700;font-size:14.5px;opacity:0;pointer-events:none;transition:all .3s;z-index:50;
+        max-width:calc(100vw - 32px);text-align:center;
+      }
+      .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+      .protocol{
+        background:var(--paper-2);border:1px dashed var(--gold);border-radius:10px;
+        padding:18px;font-size:14.5px;line-height:1.7;white-space:pre-wrap;word-break:break-word;
+      }
+      .steps{counter-reset:paso;display:grid;gap:0;margin:0;padding:0;list-style:none}
+      .steps li{
+        counter-increment:paso;display:flex;gap:14px;padding:13px 0;border-bottom:1px solid var(--line);
+      }
+      .steps li:last-child{border-bottom:0}
+      .steps li::before{
+        content:counter(paso);flex:none;width:30px;height:30px;border-radius:50%;
+        background:var(--green);color:#F5F2EA;font-weight:800;display:grid;place-items:center;font-size:15px;
+      }
+      .steps b{display:block}
+      .steps span{color:var(--ink-soft);font-size:14.5px}
+
+      /* ---------- Calendar ---------- */
+      .visits{display:grid;gap:12px}
+      .visit{
+        display:flex;gap:16px;align-items:center;background:var(--paper);
+        border:1px solid var(--line);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow);
+      }
+      .visit .hour{
+        flex:none;text-align:center;background:var(--paper-2);border:1px solid var(--line);
+        border-radius:10px;padding:8px 14px;min-width:104px;
+      }
+      .visit .hour b{display:block;font-size:19px;color:var(--red)}
+      .visit .hour span{font-size:12px;color:var(--ink-soft);font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+      .visit h3{margin:0;font-size:17px}
+      .visit p{margin:2px 0 0;color:var(--ink-soft);font-size:14.5px}
+      footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);color:var(--ink-soft);font-size:14px}
+
+      @media (max-width:820px){
+        .detail{grid-template-columns:1fr}
+        .cols{grid-template-columns:1fr}
+        form .grid{grid-template-columns:1fr}
+        .visit{flex-direction:row}
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+
+      <!-- ================= INTRO ================= -->
+      <header class="intro">
+        <h1>El <em>Campo</em></h1>
+        <p>
+          Este es el punto de encuentro. Cada cliente tiene <strong>su parcela</strong> en el mismo campo:
+          su agente llega por el enlace, arma aquí su reporte de fin de mes con el formato de su parcela,
+          y <strong>Baxter lo recoge en su hora de visita</strong> para traerle el resumen a David — avances,
+          ventas y qué funcionó y qué no. Sin WhatsApp, sin grupos, sin ruido.
+        </p>
+        <div class="chips">
+          <span class="chip"><span class="dot"></span> Reco Roofing · visita <time>2:00 pm</time></span>
+          <span class="chip"><span class="dot wait"></span> Carlos Service · visita <time>3:00 pm</time></span>
+          <span class="chip">Cosecha: último día de cada mes</span>
+        </div>
+      </header>
+
+      <!-- ================= SCENE ================= -->
+      <div class="scene-frame">
+        <svg viewBox="0 0 1200 560" role="img" aria-label="Ilustración de un campo con dos parcelas: la de Reco Roofing, activa, y la de Carlos, reservada">
+          <defs>
+            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#F7EFCE"/>
+              <stop offset=".62" stop-color="#F3DFA8"/>
+              <stop offset="1" stop-color="#EFC98B"/>
+            </linearGradient>
+            <linearGradient id="field" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#6FA055"/>
+              <stop offset="1" stop-color="#3E6B34"/>
+            </linearGradient>
+            <linearGradient id="fieldR" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#5C8A49"/>
+              <stop offset="1" stop-color="#33592C"/>
+            </linearGradient>
+          </defs>
+
+          <!-- sky -->
+          <rect x="0" y="0" width="1200" height="310" fill="url(#sky)"/>
+          <circle cx="972" cy="104" r="52" fill="#E9B44C"/>
+          <circle cx="972" cy="104" r="70" fill="#E9B44C" opacity=".22"/>
+          <g class="cloud" fill="#FFFDF2" opacity=".92">
+            <ellipse cx="212" cy="86" rx="74" ry="24"/>
+            <ellipse cx="262" cy="70" rx="52" ry="20"/>
+            <ellipse cx="162" cy="70" rx="42" ry="16"/>
+          </g>
+          <g class="cloud c2" fill="#FFFDF2" opacity=".8">
+            <ellipse cx="660" cy="56" rx="58" ry="18"/>
+            <ellipse cx="700" cy="43" rx="38" ry="14"/>
+          </g>
+          <path d="M118 132 q10 -10 20 0 M146 132 q10 -10 20 0" stroke="#4A4433" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path d="M420 104 q8 -8 16 0 M442 104 q8 -8 16 0" stroke="#4A4433" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+
+          <!-- hills -->
+          <path d="M0 268 Q 220 214 470 252 T 1200 238 V310 H0 Z" fill="#557F43"/>
+          <path d="M0 292 Q 300 250 640 280 T 1200 272 V316 H0 Z" fill="#48713A"/>
+
+          <!-- field base -->
+          <path d="M0 306 H1200 V560 H0 Z" fill="url(#field)"/>
+          <!-- Carlos parcel ground (right) -->
+          <path d="M668 306 H1200 V560 H668 Z" fill="url(#fieldR)" opacity=".55"/>
+          <!-- furrows -->
+          <g stroke="#2E5128" stroke-width="4" opacity=".5" fill="none">
+            <path d="M600 308 L60 560"/><path d="M600 308 L230 560"/><path d="M600 308 L400 560"/>
+            <path d="M600 308 L800 560"/><path d="M600 308 L985 560"/><path d="M600 308 L1150 560"/>
+          </g>
+          <g stroke="#87B96E" stroke-width="2.4" opacity=".65" fill="none">
+            <path d="M0 356 H1200"/><path d="M0 402 H1200"/><path d="M0 458 H1200"/><path d="M0 516 H1200"/>
+          </g>
+          <!-- dirt path -->
+          <path d="M600 308 C 585 380 622 450 596 560 L 668 560 C 648 452 660 380 636 308 Z" fill="#C8A061"/>
+          <path d="M600 308 C 585 380 622 450 596 560 L 668 560 C 648 452 660 380 636 308 Z" fill="none" stroke="#A97F45" stroke-width="3" opacity=".6"/>
+
+          <!-- crops: Reco parcel (grown) -->
+          <g stroke="#2C4E24" stroke-width="4" stroke-linecap="round" fill="none">
+            <path d="M120 420 v-22 M112 406 q8 -10 16 0 M128 404 q10 -8 18 -2"/>
+            <path d="M215 452 v-24 M207 440 q8 -10 16 0 M223 438 q10 -8 18 -2"/>
+            <path d="M330 428 v-22 M322 416 q8 -10 16 0 M338 414 q10 -8 18 -2"/>
+            <path d="M150 502 v-24 M142 490 q8 -10 16 0 M158 488 q10 -8 18 -2"/>
+            <path d="M268 508 v-22 M260 496 q8 -10 16 0 M276 494 q10 -8 18 -2"/>
+            <path d="M392 486 v-24 M384 474 q8 -10 16 0 M400 472 q10 -8 18 -2"/>
+            <path d="M452 428 v-20 M445 417 q7 -9 14 0 M459 415 q9 -7 16 -2"/>
+          </g>
+          <g fill="#E9B44C">
+            <circle cx="120" cy="392" r="6"/><circle cx="215" cy="422" r="6"/><circle cx="330" cy="400" r="6"/>
+            <circle cx="150" cy="472" r="6"/><circle cx="268" cy="480" r="6"/><circle cx="392" cy="456" r="6"/>
+          </g>
+          <!-- seedlings: Carlos parcel (just sown) -->
+          <g stroke="#223F1D" stroke-width="3.4" stroke-linecap="round" fill="none" opacity=".85">
+            <path d="M760 428 v-13 M753 420 q7 -8 13 -1"/>
+            <path d="M880 458 v-13 M873 450 q7 -8 13 -1"/>
+            <path d="M1010 432 v-13 M1003 424 q7 -8 13 -1"/>
+            <path d="M820 508 v-13 M813 500 q7 -8 13 -1"/>
+            <path d="M960 512 v-13 M953 504 q7 -8 13 -1"/>
+            <path d="M1085 492 v-13 M1078 484 q7 -8 13 -1"/>
+          </g>
+
+          <!-- fence -->
+          <g fill="#7A5A33">
+            <rect x="36" y="330" width="10" height="52" rx="3"/><rect x="150" y="338" width="10" height="52" rx="3"/>
+            <rect x="264" y="330" width="10" height="52" rx="3"/><rect x="1052" y="334" width="10" height="52" rx="3"/>
+            <rect x="1150" y="330" width="10" height="52" rx="3"/>
+          </g>
+          <g stroke="#8A683C" stroke-width="6" stroke-linecap="round">
+            <path d="M30 348 H470"/><path d="M690 350 H1170"/>
+          </g>
+
+          <!-- ===== SIGN: RECO ===== -->
+          <g class="parcel-sign selected" id="sign-reco" data-parcel="reco" tabindex="0" role="button" aria-label="Ver la parcela de Reco Roofing">
+            <ellipse class="sign-glow" cx="300" cy="252" rx="148" ry="88" fill="#FFE9A8" fill-opacity=".6"/>
+            <rect x="292" y="238" width="15" height="118" rx="4" fill="#7A5A33"/>
+            <rect x="128" y="146" width="344" height="98" rx="10" fill="#8A683C"/>
+            <rect x="140" y="158" width="320" height="74" rx="7" fill="#A87F45"/>
+            <text x="300" y="196" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="800" font-size="33" fill="#FFF6DC" letter-spacing="1">RECO ROOFING</text>
+            <text x="300" y="222" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="600" font-size="16.5" fill="#3D2C12">Parcela activa · visita 2:00 pm</text>
+            <!-- crow on the sign -->
+            <g class="crow">
+              <path d="M318 146 q4 -18 20 -20 q14 -2 18 8 q8 2 6 10 q-2 6 -10 6 q2 8 -6 12 q-16 6 -26 -4 q-6 -6 -2 -12 Z" fill="#14130E"/>
+              <path d="M356 132 l14 4 -13 5 Z" fill="#E9B44C"/>
+              <circle cx="344" cy="134" r="2.6" fill="#E9B44C"/>
+              <path d="M330 160 l-4 10 M342 161 l0 10" stroke="#14130E" stroke-width="3" stroke-linecap="round"/>
+            </g>
+          </g>
+
+          <!-- ===== SIGN: CARLOS ===== -->
+          <g class="parcel-sign" id="sign-carlos" data-parcel="carlos" tabindex="0" role="button" aria-label="Ver la parcela de Carlos Service">
+            <ellipse class="sign-glow" cx="918" cy="252" rx="152" ry="88" fill="#FFE9A8" fill-opacity=".6"/>
+            <rect x="910" y="238" width="15" height="118" rx="4" fill="#7A5A33"/>
+            <rect x="734" y="146" width="368" height="98" rx="10" fill="#8A683C"/>
+            <rect x="746" y="158" width="344" height="74" rx="7" fill="#A87F45"/>
+            <text x="918" y="196" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="800" font-size="29" fill="#FFF6DC" letter-spacing=".5">CARLOS SERVICE</text>
+            <text x="918" y="222" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="600" font-size="16.5" fill="#3D2C12">Parcela reservada · visita 3:00 pm</text>
+          </g>
+
+          <!-- ===== SIGN: FUTURE ===== -->
+          <g class="parcel-sign" id="sign-futura" data-parcel="futura" tabindex="0" role="button" aria-label="Ver la parcela siguiente, todavía libre" opacity=".82">
+            <ellipse class="sign-glow" cx="600" cy="330" rx="86" ry="48" fill="#FFE9A8"/>
+            <rect x="594" y="316" width="11" height="62" rx="4" fill="#7A5A33"/>
+            <rect x="520" y="252" width="160" height="66" rx="9" fill="#8A683C"/>
+            <rect x="530" y="261" width="140" height="48" rx="6" fill="#A87F45"/>
+            <text x="600" y="282" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="800" font-size="16" fill="#FFF6DC">PRÓXIMA</text>
+            <text x="600" y="302" text-anchor="middle" font-family="Archivo,sans-serif" font-weight="800" font-size="16" fill="#FFF6DC">PARCELA</text>
+          </g>
+        </svg>
+        <div class="scene-bar">
+          <span><b>Toca un letrero</b> para ver su parcela.</span>
+          <span>El cuervo vigila la de Reco. Es de la casa.</span>
+        </div>
+      </div>
+
+      <!-- ================= DETAIL ================= -->
+      <article class="detail" id="detail" aria-live="polite">
+        <div>
+          <span class="badge on" id="d-badge">Parcela activa</span>
+          <h2 id="d-name">Reco Roofing</h2>
+          <p class="biz" id="d-biz">Techos residenciales · Georgia</p>
+          <p id="d-desc" style="margin:0"></p>
+          <h3>Lo que trae su agente en cada visita</h3>
+          <ul id="d-brings"></ul>
+          <div class="actions">
+            <button class="btn" id="d-report-btn" type="button">Preparar el reporte de este mes</button>
+          </div>
+        </div>
+        <aside class="factbox">
+          <dl>
+            <div><dt>Visita de Baxter</dt><dd id="d-visit">Último día del mes · 2:00 pm</dd></div>
+            <div><dt>Último reporte</dt><dd class="small" id="d-last">Todavía ninguno — la primera cosecha llega a fin de mes.</dd></div>
+            <div><dt>La parcela se abre</dt><dd class="small" id="d-open">Jueves 12 de noviembre, en la visita de Fase 1 con Oscar.</dd></div>
+          </dl>
+        </aside>
+      </article>
+
+      <!-- ================= HOW AN AGENT ENTERS ================= -->
+      <section class="block" id="protocolo">
+        <h2>Cómo entra un agente al Campo</h2>
+        <p class="lead">Nadie necesita cuenta nueva ni otra app. David entrega dos cosas — el enlace de esta página y el protocolo — y el agente del cliente ya sabe llegar, reportar y volver cada mes.</p>
+        <div class="cols">
+          <div class="card">
+            <h3>El camino, paso a paso</h3>
+            <p class="hint">El mismo camino sirve para Reco hoy y para Carlos mañana.</p>
+            <ol class="steps">
+              <li><div><b>David abre la parcela</b><span>El cliente queda sembrado en El Campo con su letrero y su hora de visita.</span></div></li>
+              <li><div><b>David entrega el enlace y el protocolo</b><span>El agente del cliente recibe el link de El Campo y el texto del protocolo, que se pega una sola vez en su Muse.</span></div></li>
+              <li><div><b>El agente anota durante el mes</b><span>Cada venta, lead o avance que el cliente le cuente, el agente lo guarda: diez segundos por nota.</span></div></li>
+              <li><div><b>A fin de mes, el agente viene al Campo</b><span>Entra por el enlace, genera el reporte de su parcela en la estación y lo entrega firmado en la visita.</span></div></li>
+              <li><div><b>Baxter pasa en su hora y cosecha</b><span>Reco a las 2:00 pm, Carlos a las 3:00 pm. Baxter recoge el reporte y le entrega a David el resumen con la lectura que importa: ¿la estrategia vendió?, ¿qué sigue?</span></div></li>
+            </ol>
+          </div>
+          <div class="card">
+            <h3>El protocolo</h3>
+            <p class="hint">Este texto se pega en el Muse del cliente el día que se abre su parcela. Cópialo tal cual y cambia lo que va entre corchetes.</p>
+            <div class="protocol" id="protocol-text">PROTOCOLO DE EL CAMPO — [NOMBRE DEL NEGOCIO]
+
+Eres el agente de [NOMBRE DEL NEGOCIO]. Tu punto de encuentro con Baxter, el agente de David, es EL CAMPO: la página cuyo enlace David te entregó. Ahí está tu parcela, con tu letrero y tu hora de visita.
+
+TU RUTINA:
+1. Durante el mes, anota todo lo que [NOMBRE DEL CLIENTE] te cuente: clientes que llegaron por la estrategia, ventas cerradas, avances del trabajo. Sin notas no hay reporte.
+2. El último día de cada mes, entra a El Campo por el enlace y genera tu reporte en la estación de reportes de tu parcela: posteos publicados, alcance, seguidores, leads, ventas cerradas, qué funcionó y qué no funcionó.
+3. Copia el reporte generado y entrégalo en tu visita: es el documento que Baxter recoge a tu hora señalada: [HORA DE VISITA].
+4. Si algo urgente pasa entre visitas — una venta grande, un problema serio — anótalo igual: entra en el reporte del mes con su fecha.
+
+REGLA DE ORO: reporta solo lo que el cliente te contó o lo que puedas medir. Lo que no sepas, escribe «sin dato». Un campo se cuida con la verdad.</div>
+            <div class="actions" style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn green" type="button" id="copy-protocol">Copiar el protocolo</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= REPORT STATION ================= -->
+      <section class="block" id="estacion">
+        <h2>Estación de reportes</h2>
+        <p class="lead">Aquí arma su reporte el agente que visita la parcela: lo genera con el formato de la casa, firmado y con fecha y hora. El reporte no se guarda solo en la página — <strong>copiarlo o descargarlo es la entrega</strong>: ese texto es el que Baxter recoge en la visita.</p>
+        <div class="card">
+          <form id="report-form">
+            <div class="grid">
+              <div>
+                <label for="f-parcel">Parcela</label>
+                <select id="f-parcel">
+                  <option value="Reco Roofing">Reco Roofing</option>
+                  <option value="Carlos Service">Carlos Service</option>
+                </select>
+              </div>
+              <div>
+                <label for="f-month">Mes del reporte</label>
+                <input type="month" id="f-month" />
+              </div>
+              <div>
+                <label for="f-posts">Posteos publicados</label>
+                <input type="number" id="f-posts" min="0" inputmode="numeric" placeholder="0" />
+              </div>
+              <div>
+                <label for="f-reach">Alcance del mes <span>(vistas)</span></label>
+                <input type="number" id="f-reach" min="0" inputmode="numeric" placeholder="0" />
+              </div>
+              <div>
+                <label for="f-followers">Seguidores <span>(al cierre del mes)</span></label>
+                <input type="number" id="f-followers" min="0" inputmode="numeric" placeholder="0" />
+              </div>
+              <div>
+                <label for="f-leads">Leads por la estrategia</label>
+                <input type="number" id="f-leads" min="0" inputmode="numeric" placeholder="0" />
+              </div>
+              <div>
+                <label for="f-sales">Ventas cerradas</label>
+                <input type="number" id="f-sales" min="0" inputmode="numeric" placeholder="0" />
+              </div>
+              <div>
+                <label for="f-sales-detail">Detalle de ventas <span>(cliente, trabajo, monto si se conoce)</span></label>
+                <input type="text" id="f-sales-detail" placeholder="Ej.: techo cerrado en Norcross" />
+              </div>
+              <div class="full">
+                <label for="f-worked">Qué funcionó</label>
+                <textarea id="f-worked" placeholder="El contenido, el código o la movida que sí trajo gente…"></textarea>
+              </div>
+              <div class="full">
+                <label for="f-failed">Qué no funcionó</label>
+                <textarea id="f-failed" placeholder="Lo que se probó y no pegó — esto vale oro para ajustar…"></textarea>
+              </div>
+              <div class="full">
+                <label for="f-next">Siguiente paso propuesto</label>
+                <textarea id="f-next" placeholder="Lo que la parcela propone probar el próximo mes…"></textarea>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn" type="submit">Generar el reporte</button>
+              <button class="btn ghost" type="reset">Limpiar</button>
+            </div>
+          </form>
+          <div class="report-out" id="report-out" aria-live="polite"></div>
+          <div class="report-actions" id="report-actions">
+            <button class="btn green" type="button" id="copy-report">Copiar el reporte</button>
+            <button class="btn ghost" type="button" id="download-report">Descargar (.md)</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= CALENDAR ================= -->
+      <section class="block">
+        <h2>Calendario de cosecha</h2>
+        <p class="lead">El último día de cada mes, Baxter recorre El Campo parcela por parcela. Cada una tiene su hora — así ningún reporte se cruza con otro.</p>
+        <div class="visits">
+          <div class="visit">
+            <div class="hour"><b>2:00 pm</b><span>Fin de mes</span></div>
+            <div>
+              <h3>Parcela Reco Roofing</h3>
+              <p>Baxter recoge el reporte del agente de Oscar: avances de la página, leads de la estrategia y techos vendidos. Primera cosecha: fin de noviembre.</p>
+            </div>
+          </div>
+          <div class="visit">
+            <div class="hour"><b>3:00 pm</b><span>Fin de mes</span></div>
+            <div>
+              <h3>Parcela Carlos Service</h3>
+              <p>Reservada. Cuando Carlos entre al sistema, su agente reportará aquí clientes referidos, trabajos cerrados y comisiones — en la misma vuelta, una hora después.</p>
+            </div>
+          </div>
+          <div class="visit">
+            <div class="hour"><b>—</b><span>Libre</span></div>
+            <div>
+              <h3>La próxima parcela</h3>
+              <p>El Campo crece de a una parcela por cliente: letrero nuevo, hora nueva, mismo recorrido. El sistema no cambia — se siembra otra vez.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        El Campo es de David. Aquí se encuentran los agentes, aquí se deja la cosecha de cada mes — y de aquí sale el resumen que decide el siguiente paso de cada estrategia.
+      </footer>
+    </div>
+
+    <div class="toast" id="toast" role="status"></div>
+
+    <script>
+      (function(){
+        "use strict";
+
+        /* ---------- Parcel data ---------- */
+        var PARCELS = {
+          reco: {
+            badge: "Parcela activa",
+            badgeClass: "on",
+            name: "Reco Roofing",
+            biz: "Techos residenciales · Georgia",
+            desc: "La primera parcela del Campo. La siembra empieza el jueves con Oscar: su agente recibe el enlace y el protocolo, y desde ahí esta parcela reporta sola cada fin de mes.",
+            brings: [
+              "Posteos publicados, alcance y seguidores de la página",
+              "Leads que llegaron por la estrategia: comentarios «RECO» y el código «Reco 30» dicho en tienda",
+              "Techos cerrados en el mes y de dónde vino cada cliente",
+              "Qué funcionó y qué no funcionó — la lectura que ajusta la estrategia"
+            ],
+            visit: "Último día del mes · 2:00 pm",
+            last: "Todavía ninguno — la primera cosecha llega a fin de mes.",
+            open: "Jueves 12 de noviembre, en la visita de Fase 1 con Oscar.",
+            formValue: "Reco Roofing"
+          },
+          carlos: {
+            badge: "Parcela reservada",
+            badgeClass: "wait",
+            name: "Carlos Service",
+            biz: "HVAC · Gainesville / Atlanta",
+            desc: "La parcela ya está marcada y su hora apartada. El día que David empiece a ayudar a Carlos, su agente recibe el mismo enlace y el mismo protocolo — y entra al mismo recorrido, una hora después que Reco.",
+            brings: [
+              "Clientes referidos por David y en qué etapa va cada uno",
+              "Trabajos cerrados y la comisión de cada referido",
+              "Qué tipo de cliente convierte mejor",
+              "Qué funcionó y qué no funcionó en el flujo de referidos"
+            ],
+            visit: "Último día del mes · 3:00 pm",
+            last: "Sin cosecha todavía — la parcela se activa cuando arranque el trabajo con Carlos.",
+            open: "Cuando David y Carlos cierren su acuerdo y su agente reciba el protocolo.",
+            formValue: "Carlos Service"
+          },
+          futura: {
+            badge: "Parcela libre",
+            badgeClass: "next",
+            name: "La próxima parcela",
+            biz: "El siguiente cliente que entre al sistema",
+            desc: "El Campo no se llena de una vez: crece parcela por parcela. Cada cliente nuevo trae su letrero, su agente y su hora de visita — y el recorrido de Baxter simplemente se alarga una parada más.",
+            brings: [
+              "Lo que ese negocio necesite medir: avances, leads y ventas",
+              "Qué funcionó y qué no funcionó, como en todas las parcelas",
+              "Su siguiente paso propuesto, para que David decida con datos"
+            ],
+            visit: "Se asigna al abrir la parcela",
+            last: "—",
+            open: "Cuando David diga «este cliente entra al Campo».",
+            formValue: "Reco Roofing"
+          }
+        };
+
+        var detail = {
+          badge: document.getElementById("d-badge"),
+          name: document.getElementById("d-name"),
+          biz: document.getElementById("d-biz"),
+          desc: document.getElementById("d-desc"),
+          brings: document.getElementById("d-brings"),
+          visit: document.getElementById("d-visit"),
+          last: document.getElementById("d-last"),
+          open: document.getElementById("d-open")
+        };
+        var currentParcel = "reco";
+        var parcelSelect = document.getElementById("f-parcel");
+
+        function selectParcel(key){
+          var p = PARCELS[key];
+          if(!p) return;
+          currentParcel = key;
+          detail.badge.textContent = p.badge;
+          detail.badge.className = "badge " + p.badgeClass;
+          detail.name.textContent = p.name;
+          detail.biz.textContent = p.biz;
+          detail.desc.textContent = p.desc;
+          detail.brings.innerHTML = "";
+          p.brings.forEach(function(item){
+            var li = document.createElement("li");
+            li.textContent = item;
+            detail.brings.appendChild(li);
+          });
+          detail.visit.textContent = p.visit;
+          detail.last.textContent = p.last;
+          detail.open.textContent = p.open;
+          parcelSelect.value = p.formValue;
+          var signs = document.querySelectorAll(".parcel-sign");
+          for(var i=0;i<signs.length;i++){
+            signs[i].classList.toggle("selected", signs[i].getAttribute("data-parcel") === key);
+          }
+        }
+
+        var signs = document.querySelectorAll(".parcel-sign");
+        for(var i=0;i<signs.length;i++){
+          (function(sign){
+            var key = sign.getAttribute("data-parcel");
+            sign.addEventListener("click", function(){ selectParcel(key); });
+            sign.addEventListener("keydown", function(ev){
+              if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); selectParcel(key); }
+            });
+          })(signs[i]);
+        }
+
+        document.getElementById("d-report-btn").addEventListener("click", function(){
+          document.getElementById("estacion").scrollIntoView({behavior:"smooth", block:"start"});
+        });
+
+        /* ---------- Toast ---------- */
+        var toast = document.getElementById("toast");
+        var toastTimer = null;
+        function showToast(msg){
+          toast.textContent = msg;
+          toast.classList.add("show");
+          if(toastTimer) clearTimeout(toastTimer);
+          toastTimer = setTimeout(function(){ toast.classList.remove("show"); }, 2600);
+        }
+
+        /* ---------- Copy helper ---------- */
+        function copyText(text, okMsg){
+          function done(){ showToast(okMsg); }
+          function fallback(){
+            var ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed"; ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand("copy"); done(); }
+            catch(e){ showToast("No se pudo copiar — selecciónalo manualmente."); }
+            document.body.removeChild(ta);
+          }
+          if(navigator.clipboard && navigator.clipboard.writeText){
+            navigator.clipboard.writeText(text).then(done, fallback);
+          } else { fallback(); }
+        }
+
+        document.getElementById("copy-protocol").addEventListener("click", function(){
+          copyText(document.getElementById("protocol-text").textContent.trim(), "Protocolo copiado — listo para pegarlo en el Muse del cliente.");
+        });
+
+        /* ---------- Report station ---------- */
+        var form = document.getElementById("report-form");
+        var out = document.getElementById("report-out");
+        var reportActions = document.getElementById("report-actions");
+        var lastReport = "";
+
+        var MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+        function monthLabel(value){
+          if(!value) return "sin mes indicado";
+          var parts = value.split("-");
+          var m = parseInt(parts[1], 10);
+          if(m >= 1 && m <= 12) return MESES[m-1] + " de " + parts[0];
+          return value;
+        }
+        function val(id){
+          var v = document.getElementById(id).value;
+          return (v === null || v === undefined) ? "" : String(v).trim();
+        }
+        function numOr(id){
+          var v = val(id);
+          return v === "" ? "sin dato" : v;
+        }
+        function textOr(id){
+          var v = val(id);
+          return v === "" ? "sin dato" : v;
+        }
+
+        form.addEventListener("submit", function(ev){
+          ev.preventDefault();
+          var parcel = parcelSelect.value;
+          var now = new Date();
+          var hh = now.getHours(), mm = now.getMinutes();
+          var ampm = hh >= 12 ? "pm" : "am";
+          var h12 = hh % 12; if(h12 === 0) h12 = 12;
+          var stamp = now.getDate() + " de " + MESES[now.getMonth()] + " de " + now.getFullYear() +
+                      ", " + h12 + ":" + (mm < 10 ? "0" + mm : mm) + " " + ampm;
+
+          var lines = [
+            "REPORTE MENSUAL — EL CAMPO",
+            "Parcela: " + parcel,
+            "Mes: " + monthLabel(val("f-month")),
+            "Dejado en la parcela: " + stamp,
+            "———————————————",
+            "Posteos publicados: " + numOr("f-posts"),
+            "Alcance del mes: " + numOr("f-reach"),
+            "Seguidores al cierre: " + numOr("f-followers"),
+            "Leads por la estrategia: " + numOr("f-leads"),
+            "Ventas cerradas: " + numOr("f-sales"),
+            "Detalle de ventas: " + textOr("f-sales-detail"),
+            "",
+            "QUÉ FUNCIONÓ",
+            textOr("f-worked"),
+            "",
+            "QUÉ NO FUNCIONÓ",
+            textOr("f-failed"),
+            "",
+            "SIGUIENTE PASO PROPUESTO",
+            textOr("f-next"),
+            "———————————————",
+            "Firmado: el agente de la parcela " + parcel + "."
+          ];
+          lastReport = lines.join("\n");
+          out.textContent = lastReport;
+          out.classList.add("show");
+          reportActions.classList.add("show");
+          showToast("Reporte generado — cópialo o descárgalo para la visita.");
+        });
+
+        form.addEventListener("reset", function(){
+          setTimeout(function(){
+            out.classList.remove("show");
+            reportActions.classList.remove("show");
+            lastReport = "";
+            parcelSelect.value = PARCELS[currentParcel].formValue;
+          }, 0);
+        });
+
+        document.getElementById("copy-report").addEventListener("click", function(){
+          if(lastReport) copyText(lastReport, "Reporte copiado.");
+        });
+
+        document.getElementById("download-report").addEventListener("click", function(){
+          if(!lastReport) return;
+          var blob = new Blob([lastReport], {type:"text/markdown;charset=utf-8"});
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = "reporte-el-campo-" + parcelSelect.value.toLowerCase().replace(/[^a-z0-9]+/g,"-") + ".md";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function(){ URL.revokeObjectURL(url); }, 800);
+        });
+
+        /* Default month = current month */
+        var today = new Date();
+        var mm2 = today.getMonth() + 1;
+        document.getElementById("f-month").value = today.getFullYear() + "-" + (mm2 < 10 ? "0" + mm2 : mm2);
+
+        selectParcel("reco");
+      })();
+    </script>
+  </body>
+</html>
